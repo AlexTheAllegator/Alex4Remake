@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Alligator Adventure</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #87CEEB; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let gravity = 0.6;
+
+// --- SIMPLE ANIMATION SYSTEM (no external images) ---
+class Animator {
+  constructor(colors, speed = 10) {
+    this.colors = colors; // fake "frames"
+    this.speed = speed;
+    this.index = 0;
+    this.tick = 0;
+  }
+
+  update() {
+    this.tick++;
+    if (this.tick >= this.speed) {
+      this.tick = 0;
+      this.index = (this.index + 1) % this.colors.length;
+    }
+  }
+
+  getFrame() {
+    return this.colors[this.index];
+  }
+}
+
+class Player {
+  constructor() {
+    this.x = 100;
+    this.y = 0;
+    this.width = 50;
+    this.height = 50;
+    this.velY = 0;
+    this.jumpPower = -12;
+    this.onGround = false;
+
+    // different animations
+    this.idleAnim = new Animator(["#2ecc71", "#27ae60"], 20);
+    this.runAnim = new Animator(["#2ecc71", "#1abc9c", "#27ae60"], 6);
+    this.jumpAnim = new Animator(["#16a085"], 1);
+  }
+
+  update() {
+    this.velY += gravity;
+    this.y += this.velY;
+
+    if (this.y + this.height > ground.y) {
+      this.y = ground.y - this.height;
+      this.velY = 0;
+      this.onGround = true;
+    } else {
+      this.onGround = false;
+    }
+
+    // update correct animation
+    if (!this.onGround) {
+      this.jumpAnim.update();
+    } else if (keys["ArrowLeft"] || keys["ArrowRight"]) {
+      this.runAnim.update();
+    } else {
+      this.idleAnim.update();
+    }
+  }
+
+  bounce() {
+    this.velY = this.jumpPower / 1.5;
+  }
+
+  draw() {
+    let color;
+    if (!this.onGround) color = this.jumpAnim.getFrame();
+    else if (keys["ArrowLeft"] || keys["ArrowRight"]) color = this.runAnim.getFrame();
+    else color = this.idleAnim.getFrame();
+
+    ctx.fillStyle = color;
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+class Platform {
+  constructor(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    this.width = w;
+    this.height = h;
+  }
+
+  draw() {
+    ctx.fillStyle = "#8B4513";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+class Enemy {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.width = 40;
+    this.height = 40;
+    this.speed = 2;
+    this.direction = 1;
+    this.alive = true;
+
+    this.anim = new Animator(["#e74c3c", "#c0392b", "#ff6b6b"], 8);
+  }
+
+  update() {
+    if (!this.alive) return;
+
+    this.x += this.speed * this.direction;
+
+    if (this.x < 0 || this.x + this.width > canvas.width) {
+      this.direction *= -1;
+    }
+
+    this.anim.update();
+  }
+
+  draw() {
+    if (!this.alive) return;
+
+    ctx.fillStyle = this.anim.getFrame();
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+function isColliding(a, b) {
+  return a.x < b.x + b.width &&
+         a.x + a.width > b.x &&
+         a.y < b.y + b.height &&
+         a.y + a.height > b.y;
+}
+
+const player = new Player();
+const ground = new Platform(0, canvas.height - 50, canvas.width, 50);
+
+const enemies = [
+  new Enemy(300, canvas.height - 90),
+  new Enemy(600, canvas.height - 90)
+];
+
+let keys = {};
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+  if (e.key === " " && player.onGround) {
+    player.velY = player.jumpPower;
+  }
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+function update() {
+  if (keys["ArrowRight"]) player.x += 5;
+  if (keys["ArrowLeft"]) player.x -= 5;
+
+  player.update();
+
+  enemies.forEach(enemy => {
+    enemy.update();
+
+    if (!enemy.alive) return;
+
+    if (isColliding(player, enemy)) {
+      if (player.velY > 0 && player.y + player.height - 10 < enemy.y) {
+        enemy.alive = false;
+        player.bounce();
+      } else {
+        alert("Game Over!");
+        player.x = 100;
+        player.y = 0;
+        player.velY = 0;
+        enemies.forEach(e => e.alive = true);
+      }
+    }
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ground.draw();
+  player.draw();
+  enemies.forEach(enemy => enemy.draw());
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
