@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Alligator Adventure</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #87CEEB; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let gravity = 0.6;
+
+class Player {
+  constructor() {
+    this.x = 100;
+    this.y = 0;
+    this.width = 50;
+    this.height = 50;
+    this.velY = 0;
+    this.jumpPower = -12;
+    this.onGround = false;
+  }
+
+  update() {
+    this.velY += gravity;
+    this.y += this.velY;
+
+    if (this.y + this.height > ground.y) {
+      this.y = ground.y - this.height;
+      this.velY = 0;
+      this.onGround = true;
+    } else {
+      this.onGround = false;
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = "green";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+class Platform {
+  constructor(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    this.width = w;
+    this.height = h;
+  }
+
+  draw() {
+    ctx.fillStyle = "brown";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+const player = new Player();
+const ground = new Platform(0, canvas.height - 50, canvas.width, 50);
+
+let keys = {};
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+  if (e.key === " " && player.onGround) {
+    player.velY = player.jumpPower;
+  }
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+function update() {
+  if (keys["ArrowRight"]) player.x += 5;
+  if (keys["ArrowLeft"]) player.x -= 5;
+
+  player.update();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ground.draw();
+  player.draw();
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
