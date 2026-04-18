@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Alligator Adventure</title>
+  <style>
+    body { margin: 0; overflow: hidden; background: #87CEEB; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let gravity = 0.6;
+
+class Player {
+  constructor() {
+    this.x = 100;
+    this.y = 0;
+    this.width = 50;
+    this.height = 50;
+    this.velY = 0;
+    this.jumpPower = -12;
+    this.onGround = false;
+  }
+
+  update() {
+    this.velY += gravity;
+    this.y += this.velY;
+
+    if (this.y + this.height > ground.y) {
+      this.y = ground.y - this.height;
+      this.velY = 0;
+      this.onGround = true;
+    } else {
+      this.onGround = false;
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = "green";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+class Platform {
+  constructor(x, y, w, h) {
+    this.x = x;
+    this.y = y;
+    this.width = w;
+    this.height = h;
+  }
+
+  draw() {
+    ctx.fillStyle = "brown";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+class Enemy {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.width = 40;
+    this.height = 40;
+    this.speed = 2;
+    this.direction = 1;
+  }
+
+  update() {
+    this.x += this.speed * this.direction;
+
+    // simple patrol logic
+    if (this.x < 0 || this.x + this.width > canvas.width) {
+      this.direction *= -1;
+    }
+  }
+
+  draw() {
+    ctx.fillStyle = "red";
+    ctx.fillRect(this.x, this.y, this.width, this.height);
+  }
+}
+
+function isColliding(a, b) {
+  return a.x < b.x + b.width &&
+         a.x + a.width > b.x &&
+         a.y < b.y + b.height &&
+         a.y + a.height > b.y;
+}
+
+const player = new Player();
+const ground = new Platform(0, canvas.height - 50, canvas.width, 50);
+
+const enemies = [
+  new Enemy(300, canvas.height - 90),
+  new Enemy(600, canvas.height - 90)
+];
+
+let keys = {};
+
+window.addEventListener("keydown", e => {
+  keys[e.key] = true;
+  if (e.key === " " && player.onGround) {
+    player.velY = player.jumpPower;
+  }
+});
+
+window.addEventListener("keyup", e => {
+  keys[e.key] = false;
+});
+
+function update() {
+  if (keys["ArrowRight"]) player.x += 5;
+  if (keys["ArrowLeft"]) player.x -= 5;
+
+  player.update();
+
+  enemies.forEach(enemy => {
+    enemy.update();
+
+    if (isColliding(player, enemy)) {
+      alert("Game Over!");
+      player.x = 100;
+      player.y = 0;
+    }
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ground.draw();
+  player.draw();
+  enemies.forEach(enemy => enemy.draw());
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
